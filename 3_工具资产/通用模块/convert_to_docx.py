@@ -2,6 +2,7 @@
 Convert the V3.0 whitepaper MD to a formatted DOCX file.
 """
 import re
+import os
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -199,6 +200,26 @@ def convert_md_to_docx(md_path, docx_path):
         # Empty line
         elif not line.strip():
             pass
+        # Image: ![alt text](path)
+        elif re.match(r'^!\[.*\]\(.*\)', line.strip()):
+            img_match = re.match(r'^!\[(.*)\]\((.*)\)', line.strip())
+            if img_match:
+                alt_text = img_match.group(1)
+                img_path = img_match.group(2)
+                # Resolve relative to MD file location
+                md_dir = os.path.dirname(os.path.abspath(md_path))
+                if not os.path.isabs(img_path):
+                    img_path = os.path.join(md_dir, img_path)
+                if os.path.exists(img_path):
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    run = p.add_run()
+                    run.add_picture(img_path, width=Inches(6.0))
+                else:
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    run = p.add_run(f'[图片未找到: {img_path}]')
+                    run.font.color.rgb = RGBColor(0xFF, 0x00, 0x00)
         # Normal paragraph
         else:
             p = doc.add_paragraph()
@@ -212,7 +233,8 @@ def convert_md_to_docx(md_path, docx_path):
     doc.save(docx_path)
     print(f'DOCX saved: {docx_path}')
 
-# Execute
-md_path = r'D:\AI落地\2_产品设计\服务产品\标准企业AI落地解决方案_V3.0白皮书版.md'
-docx_path = r'D:\AI落地\2_产品设计\服务产品\标准企业AI落地解决方案_V3.0白皮书版.docx'
-convert_md_to_docx(md_path, docx_path)
+if __name__ == '__main__':
+    # Execute
+    md_path = r'D:\AI落地\2_产品设计\服务产品\标准企业AI落地解决方案_V3.0白皮书版.md'
+    docx_path = r'D:\AI落地\2_产品设计\服务产品\标准企业AI落地解决方案_V3.0白皮书版.docx'
+    convert_md_to_docx(md_path, docx_path)
